@@ -1,0 +1,86 @@
+# --- Service (stable endpoint) ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: busybox-service
+  labels:
+    app: busybox
+    deploy: blue-green
+  namespace: poc-accelerator
+spec:
+  selector:
+    app: busybox
+    version: blue   # initially points to "blue"
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  tolerations:
+    - effect: NoSchedule
+      key: node-role
+      operator: Equal
+      value: worker
+
+---
+# --- Blue Deployment ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: busybox-blue
+  namespace: poc-accelerator
+  labels:
+    app: busybox
+    version: blue
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: busybox
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: busybox
+        version: blue
+    spec:
+      containers:
+      - name: busybox
+        image: busybox:1.36
+        command: ["sh", "-c", "while true; do echo Hello from BusyBee BLUE $(date); sleep 5; done"]
+      tolerations:
+        - effect: NoSchedule
+          key: node-role
+          operator: Equal
+          value: worker
+
+---
+# --- Green Deployment ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: busybox-green
+  namespace: poc-accelerator
+  labels:
+    app: busybox
+    version: green
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: busybox
+      version: green
+  template:
+    metadata:
+      labels:
+        app: busybox
+        version: green
+    spec:
+      containers:
+      - name: busybox
+        image: busybox:1.37
+        command: ["sh", "-c", "while true; do echo Hello from BusyBee GREEN $(date); sleep 5; done"]
+      tolerations:
+        - effect: NoSchedule
+          key: node-role
+          operator: Equal
+          value: worker
